@@ -41,7 +41,7 @@ export default function RootLayout(): React.JSX.Element {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="workout/[id]" options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="workout/history/[id]" />
-      <Stack.Screen name="exercises/index" />
+      <Stack.Screen name="exercises" />
     </Stack>
   );
 }

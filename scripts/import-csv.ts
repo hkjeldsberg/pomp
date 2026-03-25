@@ -9,7 +9,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import { createClient } from '@supabase/supabase-js';
-import 'dotenv/config';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -19,18 +20,20 @@ if (!supabaseUrl || !serviceRoleKey) {
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, serviceRoleKey);
+const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+  db: { schema: 'pomp' },
+});
 
 interface CsvRow {
-  Dato: string;
-  Rutine: string;
+  'Treningens start': string;
+  'Treningens slutt': string;
   Øvelse: string;
   Kategori: string;
-  Sett: string;
   Vekt: string;
-  Reps: string;
-  StartTid: string;
-  SluttTid: string;
+  Repetisjoner: string;
+  Navn: string; // routine name
+  Notater: string;
 }
 
 async function readCsv(filePath: string): Promise<CsvRow[]> {
@@ -52,7 +55,7 @@ async function readCsv(filePath: string): Promise<CsvRow[]> {
     }
     if (cols.length < headers.length) continue;
     const row: Record<string, string> = {};
-    headers.forEach((h, i) => (row[h.trim()] = cols[i]?.trim() ?? ''));
+    headers.forEach((h, i) => (row[h.trim()] = (cols[i]?.trim() ?? '').replace(/^"|"$/g, '')));
     rows.push(row as unknown as CsvRow);
   }
 
@@ -65,13 +68,14 @@ async function main(): Promise<void> {
   const rows = await readCsv(csvPath);
   console.log(`Parsed ${rows.length} rows`);
 
-  // Get authenticated user for user_id
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
-    console.error('Could not get user — ensure service role key is set correctly');
+  // List users via admin API (service role required)
+  const { data: usersData, error: userError } = await supabase.auth.admin.listUsers({ perPage: 1 });
+  if (userError || !usersData?.users?.length) {
+    console.error('Could not list users — ensure service role key is set correctly');
     process.exit(1);
   }
-  const userId = user.id;
+  const userId = usersData.users[0].id;
+  console.log(`Importing as user: ${usersData.users[0].email}`);
 
   // Upsert exercises by (userId, name)
   const exerciseMap = new Map<string, string>(); // name -> id
@@ -84,22 +88,32 @@ async function main(): Promise<void> {
       .upsert({ user_id: userId, name: ex.name, category: ex.category }, { onConflict: 'user_id,name' })
       .select('id, name')
       .single();
-    if (error) console.error(`Exercise upsert error: ${ex.name}`, error.message);
+    if (error) console.error(`Exercise upsert error: "${ex.name}"`, error.message);
     else if (data) exerciseMap.set(data.name, data.id);
   }
   console.log(`Upserted ${exerciseMap.size} exercises`);
 
-  // Upsert routines by (userId, name)
+  // Insert-or-select routines (no unique constraint — avoid duplicates via select first)
   const routineMap = new Map<string, string>(); // name -> id
-  const uniqueRoutines = [...new Set(rows.map((r) => r['Rutine']))];
+  const uniqueRoutines = [...new Set(rows.map((r) => r['Navn']).filter(Boolean))];
 
   for (const routineName of uniqueRoutines) {
+    const { data: existing } = await supabase
+      .from('routines')
+      .select('id, name')
+      .eq('user_id', userId)
+      .eq('name', routineName)
+      .maybeSingle();
+    if (existing) {
+      routineMap.set(existing.name, existing.id);
+      continue;
+    }
     const { data, error } = await supabase
       .from('routines')
-      .upsert({ user_id: userId, name: routineName }, { onConflict: 'user_id,name' })
+      .insert({ user_id: userId, name: routineName })
       .select('id, name')
       .single();
-    if (error) console.error(`Routine upsert error: ${routineName}`, error.message);
+    if (error) console.error(`Routine insert error: "${routineName}"`, error.message);
     else if (data) routineMap.set(data.name, data.id);
   }
   console.log(`Upserted ${routineMap.size} routines`);
@@ -107,7 +121,7 @@ async function main(): Promise<void> {
   // Group rows into workouts by (startedAt, endedAt, routineName)
   const workoutGroups = new Map<string, CsvRow[]>();
   for (const row of rows) {
-    const key = `${row['StartTid']}|${row['SluttTid']}|${row['Rutine']}`;
+    const key = `${row['Treningens start']}|${row['Treningens slutt']}|${row['Navn']}`;
     if (!workoutGroups.has(key)) workoutGroups.set(key, []);
     workoutGroups.get(key)!.push(row);
   }
@@ -115,18 +129,25 @@ async function main(): Promise<void> {
 
   let workoutCount = 0;
   let setCount = 0;
+  const total = workoutGroups.size;
+
+  const parseDate = (s: string): Date => new Date(s.replace(' ', 'T') + ':00');
 
   for (const [key, workoutRows] of workoutGroups) {
     const [startedAt, endedAt, routineName] = key.split('|');
     const routineId = routineMap.get(routineName);
+
+    const startDate = parseDate(startedAt);
+    let endDate = parseDate(endedAt);
+    if (endDate <= startDate) endDate = new Date(startDate.getTime() + 60000);
 
     const { data: workout, error: wError } = await supabase
       .from('workouts')
       .insert({
         user_id: userId,
         routine_id: routineId ?? null,
-        started_at: new Date(startedAt).toISOString(),
-        ended_at: new Date(endedAt).toISOString(),
+        started_at: startDate.toISOString(),
+        ended_at: endDate.toISOString(),
       })
       .select('id')
       .single();
@@ -136,9 +157,11 @@ async function main(): Promise<void> {
       continue;
     }
     workoutCount++;
+    process.stdout.write(`\rInserting workouts: ${workoutCount}/${total}`);
 
-    // Group sets by exercise and derive set_number from row order
+    // Build all sets for this workout and insert in one batch
     const exerciseSets = new Map<string, number>();
+    const setsToInsert: object[] = [];
     for (const row of workoutRows) {
       const exerciseName = row['Øvelse'];
       const exerciseId = exerciseMap.get(exerciseName);
@@ -147,21 +170,23 @@ async function main(): Promise<void> {
       const setNumber = (exerciseSets.get(exerciseId) ?? 0) + 1;
       exerciseSets.set(exerciseId, setNumber);
 
-      const { error: sError } = await supabase.from('workout_sets').insert({
+      setsToInsert.push({
         workout_id: workout.id,
         exercise_id: exerciseId,
         set_number: setNumber,
         weight_kg: parseFloat(row['Vekt'].replace(',', '.')) || 0,
-        reps: parseInt(row['Reps'], 10) || 1,
+        reps: parseInt(row['Repetisjoner'], 10) || 1,
         completed: true,
       });
-
-      if (sError) console.error(`Set insert error`, sError.message);
-      else setCount++;
+    }
+    if (setsToInsert.length > 0) {
+      const { error: sError } = await supabase.from('workout_sets').insert(setsToInsert);
+      if (sError) console.error(`Sets insert error for workout ${workout.id}`, sError.message);
+      else setCount += setsToInsert.length;
     }
   }
 
-  console.log(`Import complete: ${workoutCount} workouts, ${setCount} sets`);
+  console.log(`\nImport complete: ${workoutCount} workouts, ${setCount} sets`);
 }
 
 main().catch(console.error);
