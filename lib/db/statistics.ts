@@ -1,5 +1,16 @@
 import { supabase } from '../supabase';
 
+export type DateRange = '4w' | '3m' | '1y' | 'all';
+
+export function dateRangeCutoff(range: DateRange): string | null {
+  if (range === 'all') return null;
+  const now = new Date();
+  if (range === '4w') now.setDate(now.getDate() - 28);
+  else if (range === '3m') now.setMonth(now.getMonth() - 3);
+  else if (range === '1y') now.setFullYear(now.getFullYear() - 1);
+  return now.toISOString();
+}
+
 export interface AggregateStats {
   totalSessions: number;
   totalSets: number;
@@ -23,15 +34,14 @@ export interface ProgressionPoint {
   estimated1rm: number;
 }
 
-export async function getAggregateStats(): Promise<AggregateStats> {
-  const { data, error } = await supabase
-    
+export async function getAggregateStats(dateRange: DateRange = 'all'): Promise<AggregateStats> {
+  const cutoff = dateRangeCutoff(dateRange);
+  let query = supabase
     .from('workouts')
-    .select(`
-      id,
-      workout_sets ( id, reps, weight_kg )
-    `)
+    .select(`id, workout_sets ( id, reps, weight_kg )`)
     .not('ended_at', 'is', null);
+  if (cutoff) query = query.gte('started_at', cutoff);
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
 
@@ -55,13 +65,11 @@ export async function getAggregateStats(): Promise<AggregateStats> {
   return { totalSessions, totalSets, totalReps, totalVolumeKg: Math.round(totalVolumeKg) };
 }
 
-export async function getSessionDurations(): Promise<DurationPoint[]> {
-  const { data, error } = await supabase
-    
-    .from('workouts')
-    .select('started_at, ended_at')
-    .not('ended_at', 'is', null)
-    .order('started_at', { ascending: true });
+export async function getSessionDurations(dateRange: DateRange = 'all'): Promise<DurationPoint[]> {
+  const cutoff = dateRangeCutoff(dateRange);
+  let query = supabase.from('workouts').select('started_at, ended_at').not('ended_at', 'is', null).order('started_at', { ascending: true });
+  if (cutoff) query = query.gte('started_at', cutoff);
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
 
@@ -71,13 +79,11 @@ export async function getSessionDurations(): Promise<DurationPoint[]> {
   }));
 }
 
-export async function getSessionVolumes(): Promise<VolumePoint[]> {
-  const { data, error } = await supabase
-    
-    .from('workouts')
-    .select(`started_at, workout_sets ( weight_kg, reps )`)
-    .not('ended_at', 'is', null)
-    .order('started_at', { ascending: true });
+export async function getSessionVolumes(dateRange: DateRange = 'all'): Promise<VolumePoint[]> {
+  const cutoff = dateRangeCutoff(dateRange);
+  let query = supabase.from('workouts').select(`started_at, workout_sets ( weight_kg, reps )`).not('ended_at', 'is', null).order('started_at', { ascending: true });
+  if (cutoff) query = query.gte('started_at', cutoff);
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
 
@@ -90,13 +96,11 @@ export async function getSessionVolumes(): Promise<VolumePoint[]> {
   });
 }
 
-export async function getExerciseProgression(exerciseId: string): Promise<ProgressionPoint[]> {
-  const { data, error } = await supabase
-    
-    .from('workouts')
-    .select(`started_at, workout_sets ( weight_kg, reps, exercise_id )`)
-    .not('ended_at', 'is', null)
-    .order('started_at', { ascending: true });
+export async function getExerciseProgression(exerciseId: string, dateRange: DateRange = 'all'): Promise<ProgressionPoint[]> {
+  const cutoff = dateRangeCutoff(dateRange);
+  let query = supabase.from('workouts').select(`started_at, workout_sets ( weight_kg, reps, exercise_id )`).not('ended_at', 'is', null).order('started_at', { ascending: true });
+  if (cutoff) query = query.gte('started_at', cutoff);
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
 

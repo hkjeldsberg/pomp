@@ -6,12 +6,14 @@ import { getLatestExerciseSets } from '../../lib/db/statistics';
 import { estimatedOneRM } from '../../lib/calculations';
 import { AggregateStats } from '../../components/statistics/AggregateStats';
 import { ProgressionChart } from '../../components/statistics/ProgressionChart';
+import { DateRangeFilter } from '../../components/statistics/DateRangeFilter';
 import type { Exercise } from '../../supabase/types';
-import type { ProgressionPoint } from '../../lib/db/statistics';
+import type { DateRange, ProgressionPoint } from '../../lib/db/statistics';
 
 export default function StatistikkScreen(): React.JSX.Element {
   const [fetchEnabled, setFetchEnabled] = useState(false);
-  const { aggregates, durationPoints, volumePoints, getExerciseData, isLoading, load } = useStatistics(fetchEnabled);
+  const [dateRange, setDateRange] = useState<DateRange>('all');
+  const { aggregates, durationPoints, volumePoints, getExerciseData, isLoading, load } = useStatistics(fetchEnabled, dateRange);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [exercisePoints, setExercisePoints] = useState<ProgressionPoint[]>([]);
@@ -29,6 +31,13 @@ export default function StatistikkScreen(): React.JSX.Element {
     }
   }, [fetchEnabled, load]);
 
+  function handleDateRangeChange(range: DateRange): void {
+    setDateRange(range);
+    setSelectedExercise(null);
+    setExercisePoints([]);
+    setLatestSets([]);
+  }
+
   async function handleSelectExercise(exercise: Exercise): Promise<void> {
     setSelectedExercise(exercise);
     const [points, sets] = await Promise.all([
@@ -43,9 +52,15 @@ export default function StatistikkScreen(): React.JSX.Element {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Statistikk</Text>
 
+      <DateRangeFilter selected={dateRange} onChange={handleDateRangeChange} />
+
       {isLoading && <Text style={styles.loading}>Laster...</Text>}
 
-      {aggregates && (
+      {aggregates && aggregates.totalSessions === 0 && (
+        <Text style={styles.emptyRange}>Ingen økter i valgt periode</Text>
+      )}
+
+      {aggregates && aggregates.totalSessions > 0 && (
         <View style={styles.section}>
           <AggregateStats
             totalSessions={aggregates.totalSessions}
@@ -56,19 +71,19 @@ export default function StatistikkScreen(): React.JSX.Element {
         </View>
       )}
 
-      <View style={styles.section}>
+      {aggregates && aggregates.totalSessions > 0 && <View style={styles.section}>
         <ProgressionChart
           data={durationPoints.map((d) => ({ date: d.date, value: d.durationMinutes }))}
           label="Varighet per økt (min)"
         />
-      </View>
+      </View>}
 
-      <View style={styles.section}>
+      {aggregates && aggregates.totalSessions > 0 && <View style={styles.section}>
         <ProgressionChart
           data={volumePoints.map((v) => ({ date: v.date, value: v.volumeKg }))}
           label="Volum per økt (kg)"
         />
-      </View>
+      </View>}
 
       <Text style={styles.sectionTitle}>Per øvelse</Text>
       <FlatList
@@ -130,4 +145,5 @@ const styles = StyleSheet.create({
   latestSets: { marginTop: 12 },
   latestTitle: { color: '#5DCAA5', fontSize: 13, marginBottom: 8 },
   latestSet: { color: '#E0F5F0', fontSize: 14, marginBottom: 4 },
+  emptyRange: { color: '#5DCAA5', fontSize: 15, textAlign: 'center', marginTop: 24 },
 });

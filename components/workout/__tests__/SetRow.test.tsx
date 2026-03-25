@@ -51,4 +51,55 @@ describe('SetRow', () => {
     fireEvent(getByTestId('set-row'), 'longPress');
     expect(onDelete).toHaveBeenCalledWith('set-1');
   });
+
+  it('shows confirm-same button when previousValue and onConfirmSame provided and not completed', () => {
+    const onConfirmSame = jest.fn();
+    const { getByTestId } = render(
+      <SetRow
+        {...baseProps}
+        previousValue={{ weightKg: 90, reps: 6 }}
+        onConfirmSame={onConfirmSame}
+      />
+    );
+    expect(getByTestId('confirm-same')).toBeTruthy();
+  });
+
+  it('fires onConfirmSame when confirm-same is pressed', () => {
+    const onConfirmSame = jest.fn();
+    const { getByTestId } = render(
+      <SetRow
+        {...baseProps}
+        previousValue={{ weightKg: 90, reps: 6 }}
+        onConfirmSame={onConfirmSame}
+      />
+    );
+    fireEvent.press(getByTestId('confirm-same'));
+    expect(onConfirmSame).toHaveBeenCalled();
+  });
+
+  it('does not show confirm-same when completed=true', () => {
+    const { queryByTestId } = render(
+      <SetRow
+        {...baseProps}
+        completed={true}
+        previousValue={{ weightKg: 90, reps: 6 }}
+        onConfirmSame={jest.fn()}
+      />
+    );
+    expect(queryByTestId('confirm-same')).toBeNull();
+  });
+
+  it('displays validationError inline', () => {
+    const { getByText } = render(
+      <SetRow {...baseProps} validationError="Reps must be at least 1" />
+    );
+    expect(getByText('Reps must be at least 1')).toBeTruthy();
+  });
+
+  it('does not display validationError when null', () => {
+    const { queryByText } = render(
+      <SetRow {...baseProps} validationError={null} />
+    );
+    expect(queryByText('Reps must be at least 1')).toBeNull();
+  });
 });

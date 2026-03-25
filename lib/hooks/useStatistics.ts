@@ -5,6 +5,7 @@ import {
   getSessionVolumes,
   getExerciseProgression,
   type AggregateStats,
+  type DateRange,
   type DurationPoint,
   type VolumePoint,
   type ProgressionPoint,
@@ -19,7 +20,7 @@ interface UseStatisticsReturn {
   load: () => void;
 }
 
-export function useStatistics(fetchEnabled: boolean): UseStatisticsReturn {
+export function useStatistics(fetchEnabled: boolean, dateRange: DateRange = 'all'): UseStatisticsReturn {
   const [aggregates, setAggregates] = useState<AggregateStats | null>(null);
   const [durationPoints, setDurationPoints] = useState<DurationPoint[]>([]);
   const [volumePoints, setVolumePoints] = useState<VolumePoint[]>([]);
@@ -30,9 +31,9 @@ export function useStatistics(fetchEnabled: boolean): UseStatisticsReturn {
     setIsLoading(true);
     try {
       const [agg, dur, vol] = await Promise.all([
-        getAggregateStats(),
-        getSessionDurations(),
-        getSessionVolumes(),
+        getAggregateStats(dateRange),
+        getSessionDurations(dateRange),
+        getSessionVolumes(dateRange),
       ]);
       setAggregates(agg);
       setDurationPoints(dur);
@@ -40,11 +41,11 @@ export function useStatistics(fetchEnabled: boolean): UseStatisticsReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchEnabled]);
+  }, [fetchEnabled, dateRange]);
 
   const getExerciseData = useCallback(async (exerciseId: string): Promise<ProgressionPoint[]> => {
-    return getExerciseProgression(exerciseId);
-  }, []);
+    return getExerciseProgression(exerciseId, dateRange);
+  }, [dateRange]);
 
   return { aggregates, durationPoints, volumePoints, getExerciseData, isLoading, load };
 }

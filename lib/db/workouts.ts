@@ -194,6 +194,41 @@ export async function getWorkoutDetail(id: string): Promise<WorkoutDetail> {
   };
 }
 
+export interface PreviousSetDetail {
+  set_number: number;
+  weight_kg: number;
+  reps: number;
+}
+
+// Returns all individual sets from the most recent completed session for the given routine/exercise.
+// Used to pre-fill set rows in the inline active workout layout.
+export async function getPreviousSessionSetDetails(
+  routineId: string,
+  exerciseId: string
+): Promise<PreviousSetDetail[]> {
+  const { data: lastWorkout, error: wError } = await supabase
+    .from('workouts')
+    .select('id')
+    .eq('routine_id', routineId)
+    .not('ended_at', 'is', null)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (wError) throw new Error(wError.message);
+  if (!lastWorkout) return [];
+
+  const { data: sets, error: sError } = await supabase
+    .from('workout_sets')
+    .select('set_number, weight_kg, reps')
+    .eq('workout_id', (lastWorkout as unknown as { id: string }).id)
+    .eq('exercise_id', exerciseId)
+    .order('set_number', { ascending: true });
+
+  if (sError) throw new Error(sError.message);
+  return (sets ?? []) as unknown as PreviousSetDetail[];
+}
+
 export async function getPreviousSessionSets(
   routineId: string,
   exerciseId: string

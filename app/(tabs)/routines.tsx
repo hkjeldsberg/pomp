@@ -20,6 +20,7 @@ export default function RutinerScreen(): React.JSX.Element {
   const [editRoutine, setEditRoutine] = useState<RoutineWithExercises | null>(null);
   const [nameInput, setNameInput] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
     const [r, e] = await Promise.all([getRoutines(), getExercises()]);
@@ -33,6 +34,7 @@ export default function RutinerScreen(): React.JSX.Element {
     setEditRoutine(null);
     setNameInput('');
     setSelectedIds([]);
+    setSaveError(null);
     setFormVisible(true);
   }
 
@@ -40,10 +42,15 @@ export default function RutinerScreen(): React.JSX.Element {
     setEditRoutine(routine);
     setNameInput(routine.name);
     setSelectedIds(routine.exercises.map((e) => e.exercise.id));
+    setSaveError(null);
     setFormVisible(true);
   }
 
   async function handleStart(routine: RoutineWithExercises): Promise<void> {
+    if (routine.exercises.length === 0) {
+      Alert.alert('Ingen øvelser', 'Legg til øvelser i rutinen før du starter');
+      return;
+    }
     try {
       const workout = await createWorkout({ routineId: routine.id });
       router.push(`/workout/${workout.id}` as Parameters<typeof router.push>[0]);
@@ -54,6 +61,11 @@ export default function RutinerScreen(): React.JSX.Element {
 
   async function handleSave(): Promise<void> {
     if (!nameInput.trim()) return;
+    if (selectedIds.length === 0) {
+      setSaveError('Legg til minst én øvelse i rutinen');
+      return;
+    }
+    setSaveError(null);
     try {
       if (editRoutine) {
         await updateRoutine(editRoutine.id, { name: nameInput.trim(), exerciseIds: selectedIds });
@@ -124,6 +136,7 @@ export default function RutinerScreen(): React.JSX.Element {
               <Input value={nameInput} onChangeText={setNameInput} placeholder="Navn på rutine" />
             </View>
             <Text style={styles.label}>{selectedIds.length} øvelse(r) valgt</Text>
+            {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
             <View style={styles.pickerButtonWrapper}>
               <Button label="Velg øvelser" onPress={() => setPickerVisible(true)} variant="secondary" />
             </View>
@@ -169,4 +182,5 @@ const styles = StyleSheet.create({
   modalButtons: { marginTop: 8 },
   cancelWrapper: { marginTop: 8 },
   deleteWrapper: { marginTop: 8 },
+  saveError: { color: '#ff6b6b', fontSize: 13, marginBottom: 8 },
 });

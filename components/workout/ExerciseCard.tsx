@@ -1,52 +1,78 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SetRow } from './SetRow';
-import { PreviousSetReference } from './PreviousSetReference';
-import { Button } from '../ui/Button';
-import type { SetSummary } from '../../lib/db/workouts';
+import { PendingSetRow } from './PendingSetRow';
 
 interface SetItem {
   setId: string;
+  setNumber: number;
   weightKg: number;
   reps: number;
   completed: boolean;
   note?: string | null;
 }
 
+interface PreviousSetItem {
+  setNumber: number;
+  weightKg: number;
+  reps: number;
+}
+
 interface ExerciseCardProps {
   exerciseId: string;
   exerciseName: string;
   sets: SetItem[];
-  previousData?: SetSummary | null;
-  onAddSet: (exerciseId: string) => void;
+  plannedSetCount: number;
+  previousSets?: PreviousSetItem[];
   onToggleComplete: (setId: string) => void;
   onEditSet: (setId: string) => void;
   onDeleteSet: (setId: string) => void;
+  onConfirmSet: (exerciseId: string, setNumber: number, weightKg: number, reps: number) => void;
+  onRestTimerStop?: () => void;
 }
 
 export function ExerciseCard(props: ExerciseCardProps): React.JSX.Element {
-  const { exerciseId, exerciseName, sets, previousData, onAddSet, onToggleComplete, onEditSet, onDeleteSet } = props;
+  const { exerciseId, exerciseName, sets, plannedSetCount, previousSets,
+          onToggleComplete, onEditSet, onDeleteSet, onConfirmSet, onRestTimerStop } = props;
+
+  const totalRows = Math.max(plannedSetCount, sets.length);
 
   return (
     <View style={styles.container}>
       <Text style={styles.name}>{exerciseName}</Text>
-      {previousData ? <PreviousSetReference data={previousData} /> : null}
-      {sets.map((s) => (
-        <SetRow
-          key={s.setId}
-          setId={s.setId}
-          weightKg={s.weightKg}
-          reps={s.reps}
-          completed={s.completed}
-          note={s.note}
-          onToggleComplete={onToggleComplete}
-          onEdit={onEditSet}
-          onDelete={onDeleteSet}
-        />
-      ))}
-      <View style={styles.addButton}>
-        <Button label="Legg til sett" onPress={() => onAddSet(exerciseId)} variant="secondary" />
-      </View>
+      {Array.from({ length: totalRows }, (_, i) => {
+        const setNumber = i + 1;
+        const loggedSet = sets.find((s) => s.setNumber === setNumber);
+        const prevSet = previousSets?.find((p) => p.setNumber === setNumber);
+
+        if (loggedSet) {
+          return (
+            <SetRow
+              key={`logged-${setNumber}`}
+              setId={loggedSet.setId}
+              weightKg={loggedSet.weightKg}
+              reps={loggedSet.reps}
+              completed={loggedSet.completed}
+              note={loggedSet.note}
+              onToggleComplete={onToggleComplete}
+              onEdit={onEditSet}
+              onDelete={onDeleteSet}
+            />
+          );
+        }
+
+        return (
+          <PendingSetRow
+            key={`pending-${setNumber}`}
+            setNumber={setNumber}
+            previousValue={prevSet ? { weightKg: prevSet.weightKg, reps: prevSet.reps } : undefined}
+            onConfirm={(weightKg, reps) => {
+              if (onRestTimerStop) onRestTimerStop();
+              onConfirmSet(exerciseId, setNumber, weightKg, reps);
+            }}
+          />
+        );
+      })}
     </View>
   );
 }
@@ -65,8 +91,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 8,
-  },
-  addButton: {
-    marginTop: 8,
   },
 });

@@ -25,9 +25,13 @@ export default function LoggScreen(): React.JSX.Element {
     setRoutinePickerVisible(true);
   }, []);
 
-  async function handleStartRoutine(routineId: string): Promise<void> {
+  async function handleStartRoutine(routine: RoutineWithExercises): Promise<void> {
+    if (routine.exercises.length === 0) {
+      Alert.alert('Ingen øvelser', 'Legg til øvelser i rutinen før du starter');
+      return;
+    }
     try {
-      const workout = await createWorkout({ routineId });
+      const workout = await createWorkout({ routineId: routine.id });
       setRoutinePickerVisible(false);
       router.push(`/workout/${workout.id}` as Parameters<typeof router.push>[0]);
     } catch (err) {
@@ -55,6 +59,7 @@ export default function LoggScreen(): React.JSX.Element {
           iconName="list.bullet"
           title="Ingen økter ennå"
           subtitle="Start din første økt via en rutine"
+          action={{ label: '+ Start første økt', onPress: openRoutinePicker }}
         />
       ) : (
         <FlatList
@@ -87,10 +92,12 @@ export default function LoggScreen(): React.JSX.Element {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Velg rutine</Text>
             {routines.length === 0 ? (
-              <Text style={styles.noRoutines}>Ingen rutiner — opprett en i Rutiner-fanen</Text>
+              <Pressable onPress={() => { setRoutinePickerVisible(false); router.push('/(tabs)/routines' as Parameters<typeof router.push>[0]); }} style={styles.noRoutinesRow}>
+                <Text style={styles.noRoutines}>Ingen rutiner — opprett en nå →</Text>
+              </Pressable>
             ) : (
               routines.map((r) => (
-                <Pressable key={r.id} style={styles.routineRow} onPress={() => handleStartRoutine(r.id)}>
+                <Pressable key={r.id} style={styles.routineRow} onPress={() => handleStartRoutine(r)}>
                   <Text style={styles.routineName}>{r.name}</Text>
                   <Text style={styles.routineCount}>{r.exercises.length} øvelser</Text>
                 </Pressable>
@@ -121,7 +128,8 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#112826', padding: 24, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   modalTitle: { color: '#E0F5F0', fontSize: 20, fontWeight: '700', marginBottom: 16 },
-  noRoutines: { color: '#5DCAA5', marginBottom: 16 },
+  noRoutinesRow: { paddingVertical: 12, marginBottom: 16 },
+  noRoutines: { color: '#20D2AA', fontSize: 15 },
   routineRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(32,210,170,0.1)' },
   routineName: { color: '#E0F5F0', fontSize: 16, fontWeight: '500' },
   routineCount: { color: '#5DCAA5', fontSize: 13 },

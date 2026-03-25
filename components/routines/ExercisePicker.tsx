@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, SectionList, Pressable, StyleSheet } from 'react-native';
 import { Button } from '../ui/Button';
 import type { Exercise } from '../../supabase/types';
@@ -15,6 +15,8 @@ interface ExercisePickerProps {
 }
 
 export function ExercisePicker({ exercises, selectedIds, onToggle, onConfirm, onClose }: ExercisePickerProps): React.JSX.Element {
+  const [duplicateMsg, setDuplicateMsg] = useState<string | null>(null);
+
   const sections = CATEGORIES
     .map((cat) => ({
       title: cat,
@@ -22,9 +24,34 @@ export function ExercisePicker({ exercises, selectedIds, onToggle, onConfirm, on
     }))
     .filter((s) => s.data.length > 0);
 
+  function handleToggle(exercise: Exercise): void {
+    if (selectedIds.includes(exercise.id)) {
+      // Allow de-selection without showing duplicate message
+      onToggle(exercise);
+      setDuplicateMsg(null);
+      return;
+    }
+    // Check if already selected (shouldn't reach here due to above, but guard for direct adds)
+    setDuplicateMsg(null);
+    onToggle(exercise);
+  }
+
+  // Intercept re-selection attempts: the parent passes selectedIds; if an already-selected
+  // exercise is pressed again, show a message instead of calling onToggle (which would de-select).
+  // We override onPress to detect this case.
+  function handlePress(exercise: Exercise): void {
+    if (selectedIds.includes(exercise.id)) {
+      setDuplicateMsg(`${exercise.name} er allerede i rutinen`);
+      return;
+    }
+    setDuplicateMsg(null);
+    handleToggle(exercise);
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Velg øvelser</Text>
+      {duplicateMsg ? <Text testID="duplicate-msg" style={styles.duplicateMsg}>{duplicateMsg}</Text> : null}
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
@@ -36,7 +63,7 @@ export function ExercisePicker({ exercises, selectedIds, onToggle, onConfirm, on
           return (
             <Pressable
               testID={isSelected ? `selected-${item.id}` : `exercise-${item.id}`}
-              onPress={() => onToggle(item)}
+              onPress={() => handlePress(item)}
               style={[styles.row, isSelected && styles.rowSelected]}
             >
               <Text style={styles.exerciseName}>{item.name}</Text>
@@ -67,4 +94,5 @@ const styles = StyleSheet.create({
   checkmark: { color: '#20D2AA', fontSize: 16, fontWeight: '700' },
   actions: { paddingTop: 16 },
   cancelWrapper: { marginTop: 8 },
+  duplicateMsg: { color: '#ff6b6b', fontSize: 13, marginBottom: 8 },
 });

@@ -10,31 +10,52 @@ interface SetRowProps {
   onToggleComplete: (setId: string) => void;
   onEdit: (setId: string) => void;
   onDelete: (setId: string) => void;
+  // Optional: previous session value shown when set is not completed
+  previousValue?: { weightKg: number; reps: number };
+  // Optional: confirm same as previous session (fires when ✓ icon tapped)
+  onConfirmSame?: () => void;
+  // Optional: inline validation error
+  validationError?: string | null;
 }
 
 export function SetRow(props: SetRowProps): React.JSX.Element {
-  const { setId, weightKg, reps, completed, note, onToggleComplete, onEdit, onDelete } = props;
+  const { setId, weightKg, reps, completed, note, onToggleComplete, onEdit, onDelete,
+          previousValue, onConfirmSame, validationError } = props;
 
   return (
-    <Pressable
-      testID="set-row"
-      onPress={() => onEdit(setId)}
-      onLongPress={() => onDelete(setId)}
-      style={[styles.row, completed && styles.rowCompleted]}
-    >
+    <View>
       <Pressable
-        testID="complete-toggle"
-        onPress={() => onToggleComplete(setId)}
-        style={[styles.toggle, completed && styles.toggleCompleted]}
+        testID="set-row"
+        onPress={() => onEdit(setId)}
+        onLongPress={() => onDelete(setId)}
+        style={[styles.row, completed && styles.rowCompleted]}
       >
-        {completed ? <Text style={styles.checkmark}>✓</Text> : null}
+        <Pressable
+          testID="complete-toggle"
+          onPress={() => onToggleComplete(setId)}
+          style={[styles.toggle, completed && styles.toggleCompleted]}
+        >
+          {completed ? <Text style={styles.checkmark}>✓</Text> : null}
+        </Pressable>
+        <View style={styles.info}>
+          <Text style={[styles.text, completed && styles.textCompleted]}>{weightKg} kg</Text>
+          <Text style={[styles.text, completed && styles.textCompleted]}>{reps} reps</Text>
+          {note ? <Text style={styles.note}>{note}</Text> : null}
+        </View>
+        {!completed && previousValue && onConfirmSame ? (
+          <Pressable
+            testID="confirm-same"
+            onPress={onConfirmSame}
+            style={styles.confirmSame}
+          >
+            <Text style={styles.confirmSameText}>≡✓</Text>
+          </Pressable>
+        ) : null}
       </Pressable>
-      <View style={styles.info}>
-        <Text style={[styles.text, completed && styles.textCompleted]}>{weightKg} kg</Text>
-        <Text style={[styles.text, completed && styles.textCompleted]}>{reps} reps</Text>
-        {note ? <Text style={styles.note}>{note}</Text> : null}
-      </View>
-    </Pressable>
+      {validationError ? (
+        <Text style={styles.validationError}>{validationError}</Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -82,5 +103,23 @@ const styles = StyleSheet.create({
   note: {
     color: '#5DCAA5',
     fontSize: 13,
+  },
+  confirmSame: {
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  confirmSameText: {
+    color: '#20D2AA',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  validationError: {
+    color: '#ff6b6b',
+    fontSize: 12,
+    paddingHorizontal: 4,
+    paddingBottom: 4,
   },
 });

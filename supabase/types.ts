@@ -95,6 +95,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          rest_timer_enabled: boolean
+          rest_timer_seconds: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          rest_timer_enabled?: boolean
+          rest_timer_seconds?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          rest_timer_enabled?: boolean
+          rest_timer_seconds?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workout_sets: {
         Row: {
           completed: boolean
