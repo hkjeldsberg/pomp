@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, FlatList, Modal, Alert, StyleSheet } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, FlatList, Modal, Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { getRoutines, createRoutine, updateRoutine, deleteRoutine, type RoutineWithExercises } from '../../lib/db/routines';
 import { createWorkout } from '../../lib/db/workouts';
 import { getExercises } from '../../lib/db/exercises';
@@ -28,7 +29,7 @@ export default function RutinerScreen(): React.JSX.Element {
     setExercises(e);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   function openCreateForm(): void {
     setEditRoutine(null);
@@ -48,21 +49,21 @@ export default function RutinerScreen(): React.JSX.Element {
 
   async function handleStart(routine: RoutineWithExercises): Promise<void> {
     if (routine.exercises.length === 0) {
-      Alert.alert('Ingen øvelser', 'Legg til øvelser i rutinen før du starter');
+      Alert.alert('No exercises', 'Add exercises to the routine before starting');
       return;
     }
     try {
       const workout = await createWorkout({ routineId: routine.id });
       router.push(`/workout/${workout.id}` as Parameters<typeof router.push>[0]);
     } catch (err) {
-      Alert.alert('Feil', err instanceof Error ? err.message : 'Kunne ikke starte økt');
+      Alert.alert('Error', err instanceof Error ? err.message : 'Could not start session');
     }
   }
 
   async function handleSave(): Promise<void> {
     if (!nameInput.trim()) return;
     if (selectedIds.length === 0) {
-      setSaveError('Legg til minst én øvelse i rutinen');
+      setSaveError('Add at least one exercise to the routine');
       return;
     }
     setSaveError(null);
@@ -75,15 +76,15 @@ export default function RutinerScreen(): React.JSX.Element {
       setFormVisible(false);
       await load();
     } catch (err) {
-      Alert.alert('Feil', err instanceof Error ? err.message : 'Feil ved lagring');
+      Alert.alert('Error', err instanceof Error ? err.message : 'Error saving');
     }
   }
 
   function handleDelete(routineId: string): void {
-    Alert.alert('Slett rutine', 'Er du sikker?', [
-      { text: 'Avbryt', style: 'cancel' },
+    Alert.alert('Delete routine', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Slett', style: 'destructive', onPress: async () => {
+        text: 'Delete', style: 'destructive', onPress: async () => {
           await deleteRoutine(routineId);
           await load();
         }
@@ -102,9 +103,9 @@ export default function RutinerScreen(): React.JSX.Element {
       {routines.length === 0 ? (
         <EmptyState
           iconName="rectangle.stack"
-          title="Ingen rutiner"
-          subtitle="Opprett din første treningsrutine"
-          action={{ label: 'Ny rutine', onPress: openCreateForm }}
+          title="No routines"
+          subtitle="Create your first training routine"
+          action={{ label: 'New routine', onPress: openCreateForm }}
         />
       ) : (
         <FlatList
@@ -124,46 +125,94 @@ export default function RutinerScreen(): React.JSX.Element {
       )}
 
       <View style={styles.fab}>
-        <Button label="Ny rutine" onPress={openCreateForm} />
+        <Button label="New routine" onPress={openCreateForm} />
       </View>
 
-      {/* Create/Edit form modal */}
-      <Modal visible={formVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{editRoutine ? 'Rediger rutine' : 'Ny rutine'}</Text>
-            <View style={styles.inputWrapper}>
-              <Input value={nameInput} onChangeText={setNameInput} placeholder="Navn på rutine" />
-            </View>
-            <Text style={styles.label}>{selectedIds.length} øvelse(r) valgt</Text>
-            {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
-            <View style={styles.pickerButtonWrapper}>
-              <Button label="Velg øvelser" onPress={() => setPickerVisible(true)} variant="secondary" />
-            </View>
-            <View style={styles.modalButtons}>
-              <Button label="Lagre" onPress={handleSave} />
-              <View style={styles.cancelWrapper}>
-                <Button label="Avbryt" onPress={() => setFormVisible(false)} variant="secondary" />
+      {/* Single modal: form view or exercise picker view */}
+      <Modal visible={formVisible} animationType="slide" onRequestClose={() => {
+        if (pickerVisible) { setPickerVisible(false); } else { setFormVisible(false); }
+      }}>
+        {pickerVisible ? (
+          <ExercisePicker
+            exercises={exercises}
+            selectedIds={selectedIds}
+            onToggle={toggleExercise}
+            onConfirm={(ids) => { setSelectedIds(ids); setPickerVisible(false); }}
+            onClose={() => setPickerVisible(false)}
+          />
+        ) : (
+          <View style={styles.modalOverlay}>
+            <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalContentInner}>
+              <Text style={styles.modalTitle}>{editRoutine ? 'Edit routine' : 'New routine'}</Text>
+              <View style={styles.inputWrapper}>
+                <Input value={nameInput} onChangeText={setNameInput} placeholder="Routine name" />
               </View>
-              {editRoutine && (
-                <View style={styles.deleteWrapper}>
-                  <Button label="Slett rutine" onPress={() => { setFormVisible(false); handleDelete(editRoutine.id); }} variant="secondary" />
+              {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
+              <View style={styles.pickerButtonWrapper}>
+                <Button label="Select exercises" onPress={() => setPickerVisible(true)} variant="secondary" />
+              </View>
+              {selectedIds.length > 0 && (
+                <View style={styles.selectedList}>
+                  {selectedIds.map((id, index) => {
+                    const ex = exercises.find((e) => e.id === id);
+                    if (!ex) return null;
+                    return (
+                      <View key={id} style={styles.selectedRow}>
+                        <Text style={styles.selectedName}>{index + 1}. {ex.name}</Text>
+                        <View style={styles.orderButtons}>
+                          {index > 0 && (
+                            <Pressable
+                              onPress={() => setSelectedIds((prev) => {
+                                const next = [...prev];
+                                [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                                return next;
+                              })}
+                              hitSlop={8}
+                              style={styles.orderBtn}
+                            >
+                              <Text style={styles.orderBtnText}>↑</Text>
+                            </Pressable>
+                          )}
+                          {index < selectedIds.length - 1 && (
+                            <Pressable
+                              onPress={() => setSelectedIds((prev) => {
+                                const next = [...prev];
+                                [next[index], next[index + 1]] = [next[index + 1], next[index]];
+                                return next;
+                              })}
+                              hitSlop={8}
+                              style={styles.orderBtn}
+                            >
+                              <Text style={styles.orderBtnText}>↓</Text>
+                            </Pressable>
+                          )}
+                          <Pressable
+                            onPress={() => setSelectedIds((prev) => prev.filter((i) => i !== id))}
+                            hitSlop={8}
+                            style={styles.orderBtn}
+                          >
+                            <Text style={[styles.orderBtnText, styles.removeBtn]}>✕</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
-            </View>
+              <View style={styles.modalButtons}>
+                <Button label="Save" onPress={handleSave} />
+                <View style={styles.cancelWrapper}>
+                  <Button label="Cancel" onPress={() => setFormVisible(false)} variant="secondary" />
+                </View>
+                {editRoutine && (
+                  <View style={styles.deleteWrapper}>
+                    <Button label="Delete routine" onPress={() => { setFormVisible(false); handleDelete(editRoutine.id); }} variant="secondary" />
+                  </View>
+                )}
+              </View>
+            </ScrollView>
           </View>
-        </View>
-      </Modal>
-
-      {/* Exercise picker modal */}
-      <Modal visible={pickerVisible} animationType="slide">
-        <ExercisePicker
-          exercises={exercises}
-          selectedIds={selectedIds}
-          onToggle={toggleExercise}
-          onConfirm={(ids) => { setSelectedIds(ids); setPickerVisible(false); }}
-          onClose={() => setPickerVisible(false)}
-        />
+        )}
       </Modal>
     </View>
   );
@@ -173,14 +222,21 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#071412', paddingTop: 56 },
   list: { padding: 16, paddingBottom: 100 },
   fab: { position: 'absolute', bottom: 24, left: 24, right: 24 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#112826', padding: 24, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  modalOverlay: { flex: 1, backgroundColor: '#071412', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#112826', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '90%' },
+  modalContentInner: { padding: 24, paddingBottom: 48 },
   modalTitle: { color: '#E0F5F0', fontSize: 20, fontWeight: '700', marginBottom: 16 },
   inputWrapper: { marginBottom: 16 },
-  label: { color: '#5DCAA5', fontSize: 13, marginBottom: 8 },
-  pickerButtonWrapper: { marginBottom: 16 },
+  pickerButtonWrapper: { marginBottom: 12 },
   modalButtons: { marginTop: 8 },
   cancelWrapper: { marginTop: 8 },
   deleteWrapper: { marginTop: 8 },
   saveError: { color: '#ff6b6b', fontSize: 13, marginBottom: 8 },
+  selectedList: { marginBottom: 16 },
+  selectedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(32,210,170,0.15)' },
+  selectedName: { flex: 1, color: '#E0F5F0', fontSize: 14 },
+  orderButtons: { flexDirection: 'row', gap: 4 },
+  orderBtn: { paddingHorizontal: 8, paddingVertical: 4 },
+  orderBtnText: { color: '#20D2AA', fontSize: 16, fontWeight: '600' },
+  removeBtn: { color: '#ff6b6b' },
 });

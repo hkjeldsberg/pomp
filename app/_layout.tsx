@@ -1,9 +1,9 @@
-import '../global.css';
 import React, { useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '../lib/supabase';
 import { getOpenWorkout } from '../lib/db/workouts';
+import { seedExercises } from '../lib/db/exercises';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -17,6 +17,8 @@ export default function RootLayout(): React.JSX.Element {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+        // Fire-and-forget seed — safe to call multiple times (ON CONFLICT DO NOTHING)
+        void seedExercises().catch(() => {});
         try {
           const openWorkout = await getOpenWorkout();
           if (openWorkout) {

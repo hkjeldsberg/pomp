@@ -12,11 +12,19 @@ interface RoutineCardProps {
 export function RoutineCard({ name, exerciseCount, onStart, onEdit }: RoutineCardProps): React.JSX.Element {
   return (
     <View style={styles.card}>
-      <Pressable style={styles.info} onLongPress={onEdit}>
+      <Pressable style={({ pressed }) => [styles.info, pressed && styles.infoPressed]} onLongPress={onEdit}>
         <Text style={styles.name}>{name}</Text>
-        <Text style={styles.count}>{exerciseCount} øvelser</Text>
+        <Text style={styles.count}>{exerciseCount} exercises</Text>
       </Pressable>
-      <Pressable onPress={onStart} style={styles.startButton}>
+      <Pressable
+        onPress={onStart}
+        style={({ pressed }) => [
+          styles.startButton,
+          // Inline backgroundColor so NativeWind preflight cannot override it
+          { backgroundColor: '#20D2AA' },
+          pressed && { opacity: 0.75 },
+        ]}
+      >
         <Text style={styles.startText}>Start</Text>
       </Pressable>
     </View>
@@ -32,10 +40,15 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
   info: {
     flex: 1,
+    marginRight: 16,
+  },
+  infoPressed: {
+    opacity: 0.6,
   },
   name: {
     color: '#E0F5F0',
@@ -48,7 +61,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   startButton: {
-    backgroundColor: '#20D2AA',
     minHeight: 44,
     minWidth: 80,
     borderRadius: 10,

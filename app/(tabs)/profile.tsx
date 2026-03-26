@@ -9,7 +9,7 @@ import { Input } from '../../components/ui/Input';
 export default function ProfilScreen(): React.JSX.Element {
   const [email, setEmail] = useState<string | null>(null);
   const [restEnabled, setRestEnabled] = useState(true);
-  const [restSeconds, setRestSeconds] = useState('90');
+  const [restSeconds, setRestSeconds] = useState('120');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -28,27 +28,28 @@ export default function ProfilScreen(): React.JSX.Element {
   async function handleSaveTimerSettings(): Promise<void> {
     const seconds = parseInt(restSeconds, 10);
     if (isNaN(seconds) || seconds < 0) {
-      Alert.alert('Ugyldig verdi', 'Hvilevarighet må være 0 eller mer');
+      Alert.alert('Invalid value', 'Rest duration must be 0 or more');
       return;
     }
     try {
       await upsertUserPreferences({ restTimerEnabled: restEnabled, restTimerSeconds: seconds });
+      Alert.alert('Saved', 'Settings updated');
     } catch {
-      Alert.alert('Feil', 'Kunne ikke lagre innstillinger');
+      Alert.alert('Error', 'Could not save settings');
     }
   }
 
   return (
     <View style={styles.container}>
       <Card style={styles.card}>
-        <Text style={styles.label}>Innlogget som</Text>
+        <Text style={styles.label}>Logged in as</Text>
         <Text style={styles.email}>{email ?? '—'}</Text>
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.sectionTitle}>Hvile-timer</Text>
+        <Text style={styles.sectionTitle}>Rest timer</Text>
         <View style={styles.row}>
-          <Text style={styles.settingLabel}>Aktiver hvile-timer</Text>
+          <Text style={styles.settingLabel}>Enable rest timer</Text>
           <Switch
             testID="rest-timer-toggle"
             value={restEnabled}
@@ -59,22 +60,22 @@ export default function ProfilScreen(): React.JSX.Element {
         </View>
         {restEnabled ? (
           <View style={styles.inputRow}>
-            <Text style={styles.settingLabel}>Hvilevarighet (sekunder)</Text>
+            <Text style={styles.settingLabel}>Rest duration (seconds)</Text>
             <Input
               value={restSeconds}
               onChangeText={setRestSeconds}
               keyboardType="numeric"
-              placeholder="90"
+              placeholder="120"
             />
           </View>
         ) : null}
         <View style={styles.saveButton}>
-          <Button label="Lagre" onPress={handleSaveTimerSettings} />
+          <Button label="Save" onPress={handleSaveTimerSettings} />
         </View>
       </Card>
 
       <View style={styles.buttonWrapper}>
-        <Button label="Logg ut" onPress={handleSignOut} variant="secondary" />
+        <Button label="Log out" onPress={handleSignOut} variant="secondary" />
       </View>
     </View>
   );

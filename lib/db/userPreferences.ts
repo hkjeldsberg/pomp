@@ -7,7 +7,7 @@ export interface UserPreferences {
 }
 
 const DEFAULTS: Omit<UserPreferences, 'userId'> = {
-  restTimerSeconds: 90,
+  restTimerSeconds: 120,
   restTimerEnabled: true,
 };
 

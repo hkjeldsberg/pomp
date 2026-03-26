@@ -5,8 +5,8 @@ import { ExercisePicker } from '../ExercisePicker';
 import type { Exercise } from '../../../supabase/types';
 
 const mockExercises: Exercise[] = [
-  { id: 'e1', user_id: 'u1', name: 'Benkpress', category: 'Bryst', created_at: '2026-01-01' },
-  { id: 'e2', user_id: 'u1', name: 'Markløft', category: 'Rygg', created_at: '2026-01-01' },
+  { id: 'e1', user_id: 'u1', name: 'Bench press', category: 'Chest', created_at: '2026-01-01' },
+  { id: 'e2', user_id: 'u1', name: 'Deadlift', category: 'Back', created_at: '2026-01-01' },
 ];
 
 const baseProps = {
@@ -22,14 +22,14 @@ describe('ExercisePicker', () => {
 
   it('renders exercises grouped by category', () => {
     const { getByText } = render(<ExercisePicker {...baseProps} />);
-    expect(getByText('Benkpress')).toBeTruthy();
-    expect(getByText('Markløft')).toBeTruthy();
+    expect(getByText('Bench press')).toBeTruthy();
+    expect(getByText('Deadlift')).toBeTruthy();
   });
 
   it('tapping unselected exercise calls onToggle with exercise', () => {
     const onToggle = jest.fn();
     const { getByText } = render(<ExercisePicker {...baseProps} onToggle={onToggle} />);
-    fireEvent.press(getByText('Benkpress'));
+    fireEvent.press(getByText('Bench press'));
     expect(onToggle).toHaveBeenCalledWith(mockExercises[0]);
   });
 
@@ -45,31 +45,16 @@ describe('ExercisePicker', () => {
     const { getByText } = render(
       <ExercisePicker {...baseProps} selectedIds={['e1', 'e2']} onConfirm={onConfirm} />
     );
-    fireEvent.press(getByText('Velg'));
+    fireEvent.press(getByText('Confirm'));
     expect(onConfirm).toHaveBeenCalledWith(['e1', 'e2']);
   });
 
-  it('tapping already-selected exercise shows duplicate message', () => {
-    const onToggle = jest.fn();
-    const { getByTestId, getByText } = render(
-      <ExercisePicker {...baseProps} selectedIds={['e1']} onToggle={onToggle} />
-    );
-    fireEvent.press(getByTestId('selected-e1'));
-    expect(getByText('Benkpress er allerede i rutinen')).toBeTruthy();
-    expect(getByTestId('duplicate-msg')).toBeTruthy();
-  });
-
-  it('tapping already-selected exercise does NOT call onToggle', () => {
+  it('tapping already-selected exercise calls onToggle to deselect', () => {
     const onToggle = jest.fn();
     const { getByTestId } = render(
       <ExercisePicker {...baseProps} selectedIds={['e1']} onToggle={onToggle} />
     );
     fireEvent.press(getByTestId('selected-e1'));
-    expect(onToggle).not.toHaveBeenCalled();
-  });
-
-  it('no duplicate message shown initially', () => {
-    const { queryByTestId } = render(<ExercisePicker {...baseProps} />);
-    expect(queryByTestId('duplicate-msg')).toBeNull();
+    expect(onToggle).toHaveBeenCalledWith(mockExercises[0]);
   });
 });

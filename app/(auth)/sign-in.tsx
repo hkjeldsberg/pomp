@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
@@ -27,13 +27,14 @@ export default function SignInScreen(): React.JSX.Element {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Logg inn</Text>
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <Text style={styles.title}>Log in</Text>
       <View style={styles.inputWrapper}>
         <Input
           value={email}
           onChangeText={setEmail}
-          placeholder="E-post"
+          placeholder="Email"
           keyboardType="email-address"
           autoCapitalize="none"
         />
@@ -42,21 +43,23 @@ export default function SignInScreen(): React.JSX.Element {
         <Input
           value={password}
           onChangeText={setPassword}
-          placeholder="Passord"
+          placeholder="Password"
           secureTextEntry
           errorText={error ?? undefined}
         />
       </View>
-      <Button label="Logg inn" onPress={handleSignIn} disabled={loading} />
+      <Button label="Log in" onPress={handleSignIn} disabled={loading} />
       <Pressable onPress={() => router.push('/(auth)/sign-up')} style={styles.link}>
-        <Text style={styles.linkText}>Opprett konto</Text>
+        <Text style={styles.linkText}>Create account</Text>
       </Pressable>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: 'center', backgroundColor: '#071412' },
+  flex: { flex: 1, backgroundColor: '#071412' },
+  container: { flexGrow: 1, padding: 24, justifyContent: 'center' },
   title: { color: '#E0F5F0', fontSize: 28, fontWeight: '700', marginBottom: 32 },
   inputWrapper: { marginBottom: 16 },
   link: { marginTop: 24, alignItems: 'center' },

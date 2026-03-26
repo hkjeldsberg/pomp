@@ -30,7 +30,7 @@ describe('RestTimer', () => {
     const { getByText } = render(
       <RestTimer secondsRemaining={0} isRunning={false} onStop={jest.fn()} />
     );
-    expect(getByText('Klar! 🔔')).toBeTruthy();
+    expect(getByText('Done! 🔔')).toBeTruthy();
   });
 
   it('uses default testID "rest-timer"', () => {

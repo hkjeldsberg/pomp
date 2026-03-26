@@ -20,7 +20,7 @@ describe('RoutineCard', () => {
 
   it('renders exercise count', () => {
     const { getByText } = render(<RoutineCard {...baseProps} />);
-    expect(getByText('3 øvelser')).toBeTruthy();
+    expect(getByText('3 exercises')).toBeTruthy();
   });
 
   it('"Start" Pressable fires onStart callback', () => {

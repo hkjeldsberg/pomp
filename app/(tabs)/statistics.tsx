@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useStatistics } from '../../lib/hooks/useStatistics';
 import { getExercises } from '../../lib/db/exercises';
 import { getLatestExerciseSets } from '../../lib/db/statistics';
@@ -7,6 +7,7 @@ import { estimatedOneRM } from '../../lib/calculations';
 import { AggregateStats } from '../../components/statistics/AggregateStats';
 import { ProgressionChart } from '../../components/statistics/ProgressionChart';
 import { DateRangeFilter } from '../../components/statistics/DateRangeFilter';
+import { ExercisePickerModal } from '../../components/statistics/ExercisePickerModal';
 import type { Exercise } from '../../supabase/types';
 import type { DateRange, ProgressionPoint } from '../../lib/db/statistics';
 
@@ -15,6 +16,7 @@ export default function StatistikkScreen(): React.JSX.Element {
   const [dateRange, setDateRange] = useState<DateRange>('all');
   const { aggregates, durationPoints, volumePoints, getExerciseData, isLoading, load } = useStatistics(fetchEnabled, dateRange);
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [pickerVisible, setPickerVisible] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [exercisePoints, setExercisePoints] = useState<ProgressionPoint[]>([]);
   const [latestSets, setLatestSets] = useState<Array<{ weight_kg: number; reps: number; set_number: number }>>([]);
@@ -50,14 +52,14 @@ export default function StatistikkScreen(): React.JSX.Element {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Statistikk</Text>
+      <Text style={styles.title}>Statistics</Text>
 
       <DateRangeFilter selected={dateRange} onChange={handleDateRangeChange} />
 
-      {isLoading && <Text style={styles.loading}>Laster...</Text>}
+      {isLoading && <Text style={styles.loading}>Loading...</Text>}
 
       {aggregates && aggregates.totalSessions === 0 && (
-        <Text style={styles.emptyRange}>Ingen økter i valgt periode</Text>
+        <Text style={styles.emptyRange}>No sessions in selected period</Text>
       )}
 
       {aggregates && aggregates.totalSessions > 0 && (
@@ -74,49 +76,44 @@ export default function StatistikkScreen(): React.JSX.Element {
       {aggregates && aggregates.totalSessions > 0 && <View style={styles.section}>
         <ProgressionChart
           data={durationPoints.map((d) => ({ date: d.date, value: d.durationMinutes }))}
-          label="Varighet per økt (min)"
+          label="Duration per session (min)"
         />
       </View>}
 
       {aggregates && aggregates.totalSessions > 0 && <View style={styles.section}>
         <ProgressionChart
           data={volumePoints.map((v) => ({ date: v.date, value: v.volumeKg }))}
-          label="Volum per økt (kg)"
+          label="Volume per session (kg)"
         />
       </View>}
 
-      <Text style={styles.sectionTitle}>Per øvelse</Text>
-      <FlatList
-        data={exercises}
-        keyExtractor={(e) => e.id}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => handleSelectExercise(item)}
-            style={[styles.exerciseChip, selectedExercise?.id === item.id && styles.exerciseChipActive]}
-          >
-            <Text style={[styles.chipText, selectedExercise?.id === item.id && styles.chipTextActive]}>
-              {item.name}
-            </Text>
-          </Pressable>
-        )}
-        style={styles.exercisePicker}
+      <Text style={styles.sectionTitle}>Per exercise</Text>
+      <Pressable onPress={() => setPickerVisible(true)} style={styles.exercisePickerBtn}>
+        <Text style={styles.exercisePickerBtnText}>
+          {selectedExercise ? selectedExercise.name : 'Select exercise →'}
+        </Text>
+      </Pressable>
+      <ExercisePickerModal
+        visible={pickerVisible}
+        exercises={exercises}
+        selectedId={selectedExercise?.id ?? null}
+        onSelect={(ex) => { void handleSelectExercise(ex); }}
+        onClose={() => setPickerVisible(false)}
       />
 
       {selectedExercise && (
         <View style={styles.section}>
           <ProgressionChart
             data={exercisePoints.map((p) => ({ date: p.date, value: p.maxWeightKg }))}
-            label={`${selectedExercise.name} — Max vekt (kg)`}
+            label={`${selectedExercise.name} — Max weight (kg)`}
           />
           <ProgressionChart
             data={exercisePoints.map((p) => ({ date: p.date, value: p.estimated1rm }))}
-            label={`${selectedExercise.name} — Estimert 1RM (kg)`}
+            label={`${selectedExercise.name} — Estimated 1RM (kg)`}
           />
           {latestSets.length > 0 && (
             <View style={styles.latestSets}>
-              <Text style={styles.latestTitle}>Sist</Text>
+              <Text style={styles.latestTitle}>Last session</Text>
               {latestSets.map((s) => (
                 <Text key={s.set_number} style={styles.latestSet}>
                   {s.set_number}. {s.weight_kg}kg × {s.reps} — 1RM: {Math.round(estimatedOneRM(s.weight_kg, s.reps))}kg
@@ -137,11 +134,15 @@ const styles = StyleSheet.create({
   loading: { color: '#5DCAA5', marginBottom: 16 },
   section: { marginBottom: 24 },
   sectionTitle: { color: '#E0F5F0', fontSize: 16, fontWeight: '600', marginBottom: 12 },
-  exercisePicker: { flexGrow: 0, marginBottom: 16 },
-  exerciseChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(32,210,170,0.3)', marginRight: 8 },
-  exerciseChipActive: { backgroundColor: '#20D2AA', borderColor: '#20D2AA' },
-  chipText: { color: '#5DCAA5', fontSize: 14 },
-  chipTextActive: { color: '#0A1F1C', fontWeight: '600' },
+  exercisePickerBtn: {
+    borderWidth: 1,
+    borderColor: 'rgba(32,210,170,0.3)',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  exercisePickerBtnText: { color: '#5DCAA5', fontSize: 14 },
   latestSets: { marginTop: 12 },
   latestTitle: { color: '#5DCAA5', fontSize: 13, marginBottom: 8 },
   latestSet: { color: '#E0F5F0', fontSize: 14, marginBottom: 4 },

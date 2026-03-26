@@ -14,10 +14,10 @@ describe('DateRangeFilter', () => {
     const { getByText } = render(
       <DateRangeFilter selected="all" onChange={jest.fn()} />
     );
-    expect(getByText('4 uker')).toBeTruthy();
-    expect(getByText('3 mnd')).toBeTruthy();
-    expect(getByText('1 år')).toBeTruthy();
-    expect(getByText('Alt')).toBeTruthy();
+    expect(getByText('4 weeks')).toBeTruthy();
+    expect(getByText('3 mo')).toBeTruthy();
+    expect(getByText('1 year')).toBeTruthy();
+    expect(getByText('All')).toBeTruthy();
   });
 
   it('fires onChange with correct value when option is pressed', () => {

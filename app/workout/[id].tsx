@@ -106,11 +106,11 @@ export default function ActiveWorkoutScreen(): React.JSX.Element {
   useEffect(() => {
     if (allComplete) {
       Alert.alert(
-        'Økt fullført!',
-        'Alle sett er fullført. Vil du avslutte?',
+        'Session complete!',
+        'All sets done. Ready to finish?',
         [
-          { text: 'Fortsett', style: 'cancel' },
-          { text: 'Avslutt', onPress: () => endSession(id) },
+          { text: 'Continue', style: 'cancel' },
+          { text: 'Finish', onPress: () => endSession(id) },
         ]
       );
     }
@@ -148,24 +148,24 @@ export default function ActiveWorkoutScreen(): React.JSX.Element {
   }
 
   function handleDeleteSet(setId: string): void {
-    Alert.alert('Slett sett', 'Er du sikker?', [
-      { text: 'Avbryt', style: 'cancel' },
-      { text: 'Slett', style: 'destructive', onPress: () => deleteSets(setId) },
+    Alert.alert('Delete set', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteSets(setId) },
     ]);
   }
 
   function handleAbort(): void {
     Alert.alert(
-      'Avbryt økt',
-      'Hva vil du gjøre med gjenværende sett?',
+      'End session',
+      'What do you want to do with remaining sets?',
       [
-        { text: 'Fortsett', style: 'cancel' },
+        { text: 'Continue', style: 'cancel' },
         {
-          text: 'Lagre som det er',
+          text: 'Save as is',
           onPress: () => endSession(id),
         },
         {
-          text: 'Fullfør gjenværende sett',
+          text: 'Complete remaining sets',
           onPress: async () => {
             // Mark all incomplete logged sets as complete
             const incompleteSets = sets.filter((s) => !s.completed);
@@ -201,9 +201,9 @@ export default function ActiveWorkoutScreen(): React.JSX.Element {
   }
 
   function handleCancelSession(): void {
-    Alert.alert('Slett økt', 'Dette sletter alle settene og fjerner økten.', [
-      { text: 'Tilbake', style: 'cancel' },
-      { text: 'Slett økt', style: 'destructive', onPress: () => cancelSession(id) },
+    Alert.alert('Delete session', 'This will delete all sets and remove the session.', [
+      { text: 'Back', style: 'cancel' },
+      { text: 'Delete session', style: 'destructive', onPress: () => cancelSession(id) },
     ]);
   }
 
@@ -226,10 +226,10 @@ export default function ActiveWorkoutScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Aktiv økt</Text>
+        <Text style={styles.title}>Active session</Text>
         <Text style={styles.timer}>{formatElapsed(elapsedSeconds)}</Text>
         <Pressable onPress={handleAbort}>
-          <Text style={styles.abortLink}>Avbryt</Text>
+          <Text style={styles.abortLink}>End</Text>
         </Pressable>
       </View>
 
@@ -265,9 +265,9 @@ export default function ActiveWorkoutScreen(): React.JSX.Element {
       />
 
       <View style={styles.footer}>
-        <Button label="Avslutt økt" onPress={() => endSession(id)} />
+        <Button label="Finish session" onPress={() => endSession(id)} />
         <View style={styles.cancelButtonWrapper}>
-          <Button label="Slett økt" onPress={handleCancelSession} variant="secondary" />
+          <Button label="Delete session" onPress={handleCancelSession} variant="secondary" />
         </View>
       </View>
 
@@ -275,12 +275,12 @@ export default function ActiveWorkoutScreen(): React.JSX.Element {
       <Modal visible={editModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Rediger sett</Text>
+            <Text style={styles.modalTitle}>Edit set</Text>
             <View style={styles.inputRow}>
               <Input
                 value={weightInput}
                 onChangeText={setWeightInput}
-                placeholder="Vekt (kg)"
+                placeholder="Weight (kg)"
                 keyboardType="numeric"
               />
             </View>
@@ -293,12 +293,12 @@ export default function ActiveWorkoutScreen(): React.JSX.Element {
               />
             </View>
             <View style={styles.inputRow}>
-              <Input value={noteInput} onChangeText={setNoteInput} placeholder="Notat (valgfritt)" />
+              <Input value={noteInput} onChangeText={setNoteInput} placeholder="Note (optional)" />
             </View>
             <View style={styles.modalButtons}>
-              <Button label="Lagre" onPress={handleSaveEdit} />
+              <Button label="Save" onPress={handleSaveEdit} />
               <View style={styles.cancelButtonWrapper}>
-                <Button label="Avbryt" onPress={() => setEditModalVisible(false)} variant="secondary" />
+                <Button label="Cancel" onPress={() => setEditModalVisible(false)} variant="secondary" />
               </View>
             </View>
           </View>

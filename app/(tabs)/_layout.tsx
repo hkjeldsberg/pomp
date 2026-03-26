@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout(): React.JSX.Element {
   return (
@@ -18,52 +18,45 @@ export default function TabLayout(): React.JSX.Element {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Logg',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'list.bullet', android: 'list', web: 'list' }}
-              tintColor={color}
-              size={24}
-            />
+          title: 'Log',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="journal-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="routines"
         options={{
-          title: 'Rutiner',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'rectangle.stack', android: 'layers', web: 'layers' }}
-              tintColor={color}
-              size={24}
-            />
+          title: 'Routines',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="layers-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="exercises"
+        options={{
+          title: 'Exercises',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="barbell-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="statistics"
         options={{
-          title: 'Statistikk',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' }}
-              tintColor={color}
-              size={24}
-            />
+          title: 'Statistics',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="stats-chart-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profil',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'person.circle', android: 'person', web: 'person' }}
-              tintColor={color}
-              size={24}
-            />
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
       />

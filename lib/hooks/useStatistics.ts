@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { filterOutliersByIQR } from '../utils/statistics';
 import {
   getAggregateStats,
   getSessionDurations,
@@ -36,8 +37,8 @@ export function useStatistics(fetchEnabled: boolean, dateRange: DateRange = 'all
         getSessionVolumes(dateRange),
       ]);
       setAggregates(agg);
-      setDurationPoints(dur);
-      setVolumePoints(vol);
+      setDurationPoints(filterOutliersByIQR(dur, 'durationMinutes'));
+      setVolumePoints(filterOutliersByIQR(vol, 'volumeKg'));
     } finally {
       setIsLoading(false);
     }

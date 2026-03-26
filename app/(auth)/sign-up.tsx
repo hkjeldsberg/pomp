@@ -23,7 +23,7 @@ export default function SignUpScreen(): React.JSX.Element {
         router.replace('/(tabs)');
       }
     } catch (e) {
-      Alert.alert('Feil', 'Noe gikk galt. Prøv igjen.');
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -31,12 +31,12 @@ export default function SignUpScreen(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Opprett konto</Text>
+      <Text style={styles.title}>Create account</Text>
       <View style={styles.inputWrapper}>
         <Input
           value={email}
           onChangeText={setEmail}
-          placeholder="E-post"
+          placeholder="Email"
           keyboardType="email-address"
           autoCapitalize="none"
         />
@@ -45,12 +45,12 @@ export default function SignUpScreen(): React.JSX.Element {
         <Input
           value={password}
           onChangeText={setPassword}
-          placeholder="Passord"
+          placeholder="Password"
           secureTextEntry
           errorText={error ?? undefined}
         />
       </View>
-      <Button label="Opprett konto" onPress={handleSignUp} disabled={loading} />
+      <Button label="Create account" onPress={handleSignUp} disabled={loading} />
     </View>
   );
 }

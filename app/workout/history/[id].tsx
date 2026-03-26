@@ -9,7 +9,7 @@ import { Button } from '../../../components/ui/Button';
 import { sessionDurationMinutes } from '../../../lib/calculations';
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('no-NO', {
+  return new Date(iso).toLocaleDateString('en-US', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
 }
@@ -29,7 +29,7 @@ export default function WorkoutHistoryDetail(): React.JSX.Element {
 
   function loadDetail(): void {
     getWorkoutDetail(id).then(setDetail).catch(() => {
-      Alert.alert('Feil', 'Kunne ikke laste økt');
+      Alert.alert('Error', 'Could not load session');
     });
   }
 
@@ -64,22 +64,22 @@ export default function WorkoutHistoryDetail(): React.JSX.Element {
       setEditState(null);
       loadDetail();
     } catch {
-      Alert.alert('Feil', 'Kunne ikke oppdatere sett');
+      Alert.alert('Error', 'Could not update set');
     }
   }
 
   function handleDeleteSet(setId: string): void {
-    Alert.alert('Slett sett', 'Er du sikker?', [
-      { text: 'Avbryt', style: 'cancel' },
+    Alert.alert('Delete set', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Slett',
+        text: 'Delete',
         style: 'destructive',
         onPress: async () => {
           try {
             await deleteSet(setId);
             loadDetail();
           } catch {
-            Alert.alert('Feil', 'Kunne ikke slette sett');
+            Alert.alert('Error', 'Could not delete set');
           }
         },
       },
@@ -105,7 +105,7 @@ export default function WorkoutHistoryDetail(): React.JSX.Element {
     <View style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>← Tilbake</Text>
+          <Text style={styles.backText}>← Back</Text>
         </Pressable>
         <Text style={styles.date}>{formatDate(detail.started_at)}</Text>
         {durationMin !== null ? <Text style={styles.meta}>{durationMin} min</Text> : null}
@@ -135,12 +135,12 @@ export default function WorkoutHistoryDetail(): React.JSX.Element {
       <Modal visible={editState !== null} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Rediger sett</Text>
+            <Text style={styles.modalTitle}>Edit set</Text>
             <View style={styles.inputRow}>
               <Input
                 value={editState?.weightInput ?? ''}
                 onChangeText={(v) => setEditState((s) => s ? { ...s, weightInput: v } : s)}
-                placeholder="Vekt (kg)"
+                placeholder="Weight (kg)"
                 keyboardType="numeric"
               />
             </View>
@@ -156,13 +156,13 @@ export default function WorkoutHistoryDetail(): React.JSX.Element {
               <Input
                 value={editState?.noteInput ?? ''}
                 onChangeText={(v) => setEditState((s) => s ? { ...s, noteInput: v } : s)}
-                placeholder="Notat (valgfritt)"
+                placeholder="Note (optional)"
               />
             </View>
             <View style={styles.modalButtons}>
-              <Button label="Lagre" onPress={handleSaveEdit} />
+              <Button label="Save" onPress={handleSaveEdit} />
               <View style={styles.cancelWrapper}>
-                <Button label="Avbryt" onPress={() => setEditState(null)} variant="secondary" />
+                <Button label="Cancel" onPress={() => setEditState(null)} variant="secondary" />
               </View>
             </View>
           </View>

@@ -8,10 +8,10 @@ interface Option {
 }
 
 const OPTIONS: Option[] = [
-  { value: '4w', label: '4 uker' },
-  { value: '3m', label: '3 mnd' },
-  { value: '1y', label: '1 år' },
-  { value: 'all', label: 'Alt' },
+  { value: '4w', label: '4 weeks' },
+  { value: '3m', label: '3 mo' },
+  { value: '1y', label: '1 year' },
+  { value: 'all', label: 'All' },
 ];
 
 interface DateRangeFilterProps {

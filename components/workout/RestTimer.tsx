@@ -19,13 +19,13 @@ export function RestTimer({ secondsRemaining, isRunning, onStop, testID }: RestT
       onPress={onStop}
       style={[styles.container, isDone && styles.containerDone]}
     >
-      <Text style={styles.label}>Hvile</Text>
+      <Text style={styles.label}>Rest</Text>
       {isDone ? (
-        <Text style={styles.doneText}>Klar! 🔔</Text>
+        <Text style={styles.doneText}>Done! 🔔</Text>
       ) : (
         <Text style={styles.countdown}>{secondsRemaining}s</Text>
       )}
-      <Text style={styles.hint}>Trykk for å stoppe</Text>
+      <Text style={styles.hint}>Tap to stop</Text>
     </Pressable>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet, type PressableProps } from 'react-native';
+import { Pressable, Text, StyleSheet } from 'react-native';
 
 interface ButtonProps {
   label: string;
@@ -16,7 +16,15 @@ export function Button(props: ButtonProps): React.JSX.Element {
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[styles.base, isPrimary ? styles.primary : styles.secondary, disabled && styles.disabled]}
+      style={({ pressed }) => [
+        styles.base,
+        // Inline color overrides go LAST so NativeWind preflight cannot override them
+        isPrimary
+          ? { backgroundColor: '#20D2AA' }
+          : { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#20D2AA' },
+        disabled && { opacity: 0.4 },
+        pressed && { opacity: 0.75 },
+      ]}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
     >
@@ -35,17 +43,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-  },
-  primary: {
-    backgroundColor: '#20D2AA',
-  },
-  secondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#20D2AA',
-  },
-  disabled: {
-    opacity: 0.4,
   },
   label: {
     fontSize: 16,

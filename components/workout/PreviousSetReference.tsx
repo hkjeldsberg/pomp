@@ -10,7 +10,7 @@ export function PreviousSetReference({ data }: PreviousSetReferenceProps): React
   return (
     <View testID="previous-set-reference" style={styles.container}>
       <Text style={styles.text}>
-        Sist: {data.weight_kg}kg × {data.set_count} sett ({data.reps} reps)
+        Last: {data.weight_kg}kg × {data.set_count} sets ({data.reps} reps)
       </Text>
     </View>
   );

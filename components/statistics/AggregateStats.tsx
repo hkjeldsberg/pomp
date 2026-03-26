@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card } from '../ui/Card';
+import { formatStatNumber } from '../../lib/utils/format';
 
 interface AggregateStatsProps {
   totalSessions: number;
@@ -17,7 +18,7 @@ interface StatCellProps {
 function StatCell({ value, label }: StatCellProps): React.JSX.Element {
   return (
     <Card style={styles.cell}>
-      <Text style={styles.value}>{value}</Text>
+      <Text style={styles.value}>{formatStatNumber(value)}</Text>
       <Text style={styles.label}>{label}</Text>
     </Card>
   );
@@ -26,10 +27,10 @@ function StatCell({ value, label }: StatCellProps): React.JSX.Element {
 export function AggregateStats({ totalSessions, totalSets, totalReps, totalVolumeKg }: AggregateStatsProps): React.JSX.Element {
   return (
     <View style={styles.grid}>
-      <StatCell value={totalSessions} label="Økter" />
-      <StatCell value={totalSets} label="Sett" />
+      <StatCell value={totalSessions} label="Sessions" />
+      <StatCell value={totalSets} label="Sets" />
       <StatCell value={totalReps} label="Reps" />
-      <StatCell value={totalVolumeKg} label="Volum kg" />
+      <StatCell value={totalVolumeKg} label="Volume kg" />
     </View>
   );
 }

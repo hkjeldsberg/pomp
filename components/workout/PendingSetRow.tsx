@@ -30,11 +30,11 @@ export function PendingSetRow({ setNumber, previousValue, onConfirm, validationE
     }
     if (result.requiresConfirmation) {
       Alert.alert(
-        'Uvanlig høy vekt',
-        `Det er ${w} kg — stemmer det?`,
+        'Unusually high weight',
+        `That's ${w} kg — is that correct?`,
         [
-          { text: 'Avbryt', style: 'cancel' },
-          { text: 'Bekreft', onPress: () => { setLocalError(null); onConfirm(w!, r!); } },
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Confirm', onPress: () => { setLocalError(null); onConfirm(w!, r!); } },
         ]
       );
       return;
